@@ -6,7 +6,6 @@ module RubyCAS
     config.rubycas = ActiveSupport::OrderedOptions.new
     
     initializer 'rubycas.initialize' do |app|
-      Rails.logger.debug "SETTING UP RUBYCAS"
       RubyCAS::Filter.setup(config.rubycas)
     end
   end
