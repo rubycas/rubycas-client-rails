@@ -411,7 +411,7 @@ module RubyCAS
       # Returns the path and filename of the service session lookup file.
       def filename_of_service_session_lookup(st)
         st = st.ticket if st.kind_of? CASClient::ServiceTicket
-        return "#{RAILS_ROOT}/tmp/sessions/cas_sess.#{st}"
+        return "#{Rails.root}/tmp/sessions/cas_sess.#{st}"
       end
     end
     
