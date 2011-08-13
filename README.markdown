@@ -6,22 +6,18 @@ Rails plugin for using the RubyCAS-Client as a controller filter.
 This uses a Railtie, so will only work with Rails 3.0 and up.
 
 
-Example
-=======
+Installation
+============
 
-First, install the `rubycas-client` gem:
+Add the following to your `Gemfile`:
 
-    gem install rubycas-client
+    gem 'rubycas-client-rails'
+    
+Then run bundler in your Rails app's root directory:
 
-Next, clone the `rubycas-client-rails` code from Github (this will eventually
-be released as a gem too).
+    bundle install
 
-Now add both to your `Gemfile`:
-
-    gem 'rubycas-client'
-    gem 'rubycas-client-rails', :path => '/path/where/you/cloned/rubycas-client-rails'
-
-In your `application.rb` add:
+Once the necessary gems have been installed, in your `application.rb` add:
 
     config.rubycas.cas_base_url = 'https://cas.example.com/'
   
@@ -30,6 +26,10 @@ Finally, to enable the CAS filter for a controller:
     class MyController < ApplicationController
   
       before_filter RubyCAS::Filter
+      
+If you want authentication to be optional, use the GatewayFilter instead:
+
+      before_filter RubyCAS::GatewayFilter
   
 Many other configuration options are available. For example you can instruct
 the client to log its actions to the default Rails logger using:
