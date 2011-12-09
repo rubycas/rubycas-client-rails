@@ -414,11 +414,11 @@ module RubyCAS
         return "#{Rails.root}/tmp/sessions/cas_sess.#{st}"
       end
     end
-    
-    class GatewayFilter < Filter
-      def self.use_gatewaying?
-        return true unless @@config[:use_gatewaying] == false
-      end
+  end
+
+  class GatewayFilter < Filter
+    def self.use_gatewaying?
+      return true unless @@config[:use_gatewaying] == false
     end
   end
 end
