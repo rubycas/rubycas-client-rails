@@ -76,7 +76,7 @@ module RubyCAS
 
         if st
           client.validate_service_ticket(st) unless st.has_been_validated?
-          vr = st.response
+          vr = st.respond_to?(:response) ? st.response : st
 
           if st.is_valid?
             if is_new_session
