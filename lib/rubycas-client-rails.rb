@@ -302,15 +302,17 @@ module RubyCAS
 
           log.debug "Intercepted single-sign-out request for CAS session #{si.inspect}."
 
-          begin
-            required_sess_store = ActiveRecord::SessionStore
-            current_sess_store  = Rails.application.config.session_store
-          rescue NameError
-            # for older versions of Rails (prior to 2.3)
-            required_sess_store = CGI::Session::ActiveRecordStore
-            current_sess_store  = ActionController::Base.session_options[:database_manager]
-          end
+          # Rails 2.3
+          ##required_sess_store = ActiveRecord::SessionStore
+          ##current_sess_store  = ActionController::Base.session_store
 
+          # Rails 2.2
+          ## required_sess_store = CGI::Session::ActiveRecordStore
+          ## current_sess_store  = ActionController::Base.session_options[:database_manager]
+
+          # Rails 3.0
+          required_sess_store = ActiveRecord::SessionStore
+          current_sess_store  = ::Rails.application.config.session_store
 
           if current_sess_store == required_sess_store
             session_id = read_service_session_lookup(si)
@@ -318,6 +320,8 @@ module RubyCAS
             if session_id
               session = current_sess_store::Session.find_by_session_id(session_id)
               if session
+                st = session.data[:cas_last_valid_ticket] || si
+                delete_service_session_lookup(st) if st
                 session.destroy
                 log.debug("Destroyed #{session.inspect} for session #{session_id.inspect} corresponding to service ticket #{si.inspect}.")
               else
@@ -417,11 +421,11 @@ module RubyCAS
         return "#{Rails.root}/tmp/sessions/cas_sess.#{st}"
       end
     end
+  end
 
-    class GatewayFilter < Filter
-      def self.use_gatewaying?
-        return true unless @@config[:use_gatewaying] == false
-      end
+  class GatewayFilter < Filter
+    def self.use_gatewaying?
+      return true unless @@config[:use_gatewaying] == false
     end
   end
 end
