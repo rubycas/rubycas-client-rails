@@ -288,7 +288,7 @@ module RubyCAS
         
         if controller.request.post? &&
             controller.params['logoutRequest'] &&
-            controller.params['logoutRequest'] =~
+            URI.unescape(controller.params['logoutRequest']) =~
               %r{^<samlp:LogoutRequest.*?<samlp:SessionIndex>(.*)</samlp:SessionIndex>}m
           # TODO: Maybe check that the request came from the registered CAS server? Although this might be
           #       pointless since it's easily spoofable...
