@@ -310,7 +310,7 @@ module RubyCAS
           ## current_sess_store  = ActionController::Base.session_options[:database_manager]
 
           # Rails 3.0
-          allowed_sess_stores = [ActiveRecord::SessionStore, ActionDispatch::Session::DalliStore]
+          required_sess_store = [ActiveRecord::SessionStore, ActionDispatch::Session::DalliStore]
           current_sess_store  = ::Rails.application.config.session_store
 
           case current_sess_store
@@ -342,7 +342,7 @@ module RubyCAS
           else
             log.error "Cannot process logout request because this Rails application's session store is "+
               " #{current_sess_store.name.inspect}. Single Sign-Out only works with the "+
-              " #{required_sess_store.name.join(', ')} session stores."
+              " #{required_sess_store.name.inspect} session stores."
           end
           
           # Return true to indicate that a single-sign-out request was detected
