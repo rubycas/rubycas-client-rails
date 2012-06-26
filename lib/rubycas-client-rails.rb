@@ -310,10 +310,11 @@ module RubyCAS
           ## current_sess_store  = ActionController::Base.session_options[:database_manager]
 
           # Rails 3.0
-          required_sess_store = ActiveRecord::SessionStore
+          allowed_sess_stores = [ActiveRecord::SessionStore, ActionDispatch::Session::DalliStore]
           current_sess_store  = ::Rails.application.config.session_store
 
-          if current_sess_store == required_sess_store
+          case current_sess_store
+          when ActiveRecord::SessionStore
             session_id = read_service_session_lookup(si)
 
             if session_id
@@ -331,10 +332,17 @@ module RubyCAS
             else
               log.warn("Couldn't destroy session with SessionIndex #{si} because no corresponding session id could be looked up.")
             end
+          when ActionDispatch::Session::DalliStore
+            store = current_sess_store.new(self, Rails.application.class.parent_name.constantize::Application.config.session_options)
+            session_id = read_service_session_lookup(si)
+            session = store.send(:get_session, nil, session_id)[1] # https://github.com/mperham/dalli/blob/master/lib/action_dispatch/middleware/session/dalli_store.rb#L44
+            if si == session[:cas_last_valid_ticket]
+              store.send(:destroy_session, nil, session_id, :drop => true)
+            end
           else
             log.error "Cannot process logout request because this Rails application's session store is "+
               " #{current_sess_store.name.inspect}. Single Sign-Out only works with the "+
-              " #{required_sess_store.name.inspect} session store."
+              " #{required_sess_store.name.join(', ')} session stores."
           end
           
           # Return true to indicate that a single-sign-out request was detected
