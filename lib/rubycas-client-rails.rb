@@ -310,6 +310,8 @@ module RubyCAS
           ## current_sess_store  = ActionController::Base.session_options[:database_manager]
 
           # Rails 3.0
+          @current_sess_store  = ::Rails.application.config.session_store
+
           if @current_sess_store.name === "ActiveRecord::SessionStore"
             session_id = read_service_session_lookup(si)
 
