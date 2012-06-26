@@ -310,15 +310,11 @@ module RubyCAS
           ## current_sess_store  = ActionController::Base.session_options[:database_manager]
 
           # Rails 3.0
-          required_sess_store = [ActiveRecord::SessionStore, ActionDispatch::Session::DalliStore]
-          current_sess_store  = ::Rails.application.config.session_store
-
-          case current_sess_store
-          when ActiveRecord::SessionStore
+          if @current_sess_store.name === "ActiveRecord::SessionStore"
             session_id = read_service_session_lookup(si)
 
             if session_id
-              session = current_sess_store::Session.find_by_session_id(session_id)
+              session = @current_sess_store::Session.find_by_session_id(session_id)
               if session
                 st = session.data[:cas_last_valid_ticket] || si
                 delete_service_session_lookup(st) if st
@@ -327,22 +323,19 @@ module RubyCAS
               else
                 log.debug("Data for session #{session_id.inspect} was not found. It may have already been cleared by a local CAS logout request.")
               end
-              
+
               log.info("Single-sign-out for session #{session_id.inspect} completed successfuly.")
             else
               log.warn("Couldn't destroy session with SessionIndex #{si} because no corresponding session id could be looked up.")
             end
-          when ActionDispatch::Session::DalliStore
-            store = current_sess_store.new(self, Rails.application.class.parent_name.constantize::Application.config.session_options)
-            session_id = read_service_session_lookup(si)
-            session = store.send(:get_session, nil, session_id)[1] # https://github.com/mperham/dalli/blob/master/lib/action_dispatch/middleware/session/dalli_store.rb#L44
-            if si == session[:cas_last_valid_ticket]
-              store.send(:destroy_session, nil, session_id, :drop => true)
-            end
           else
-            log.error "Cannot process logout request because this Rails application's session store is "+
-              " #{current_sess_store.name.inspect}. Single Sign-Out only works with the "+
-              " #{required_sess_store.name.inspect} session stores."
+            if @current_sess_store.method_defined?(:get_session) && @current_sess_store.method_defined?(:destroy_session)
+              destroy_generic_session(si)
+            else
+              log.error "Cannot process logout request because this Rails application's session store doesn't provide methods to find and/or delete session.\n"+
+                "Session store in use is #{@current_sess_store.name.inspect}. Single Sign-Out only works with session stores"+
+                " that provide #get_session and #destroy_session methods."
+            end
           end
           
           # Return true to indicate that a single-sign-out request was detected
@@ -352,6 +345,15 @@ module RubyCAS
         
         # This is not a single-sign-out request.
         return false
+      end
+
+      def destroy_generic_session(si)
+        session_id = read_service_session_lookup(si)
+        store = @current_sess_store.new(nil, Rails.application.config.session_options)
+        session = store.send(:get_session, {}, session_id)[1]
+        if si == session["cas_last_valid_ticket"]
+          store.send(:destroy_session, {}, session_id, :drop => true)
+        end
       end
       
       def read_ticket(controller)
