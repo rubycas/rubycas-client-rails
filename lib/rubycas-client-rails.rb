@@ -1,4 +1,3 @@
-
 require 'casclient'
 
 module RubyCAS
@@ -342,7 +341,7 @@ module RubyCAS
           else
             log.error "Cannot process logout request because this Rails application's session store is "+
               " #{current_sess_store.name.inspect}. Single Sign-Out only works with the "+
-              " #{required_sess_store.name.inspect} session stores."
+              " #{required_sess_store.inspect} session stores."
           end
           
           # Return true to indicate that a single-sign-out request was detected
