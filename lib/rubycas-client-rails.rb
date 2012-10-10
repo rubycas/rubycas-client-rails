@@ -149,8 +149,8 @@ module RubyCAS
           unauthorized!(controller)
           return false
         end
-      rescue OpenSSL::SSL::SSLError
-        log.error("SSL Error: hostname was not match with the server certificate. You can try to disable the ssl verification with a :force_ssl_verification => false in your configurations file.")
+      rescue OpenSSL::SSL::SSLError => sslexception
+        log.error("SSL Error: #{sslexception}")
         unauthorized!(controller)
         return false
       end
