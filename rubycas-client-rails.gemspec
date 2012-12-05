@@ -13,6 +13,8 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{rubycas-client}
 
-  s.add_dependency('rails', '>= 3.0.0')
+  s.add_dependency('actionpack', '>= 3.0.0')
+  s.add_dependency('activesupport', '>= 3.0.0')
+  s.add_dependency('railties', '>= 3.0.0')
   s.add_dependency('rubycas-client', '~> 2.3.9.rc1')
 end
