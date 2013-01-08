@@ -372,10 +372,8 @@ module RubyCAS
           log.debug("Using explicitly set service url: #{config[:service_url]}")
           return config[:service_url]
         end
-        
-        params = controller.params.dup
-        params.delete(:ticket)
-        service_url = controller.url_for(params)
+
+        service_url = controller.request.url
         log.debug("Guessed service url: #{service_url.inspect}")
         return service_url
       end
