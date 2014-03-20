@@ -302,24 +302,13 @@ module RubyCAS
 
           log.debug "Intercepted single-sign-out request for CAS session #{si.inspect}."
 
-          # Rails 2.3
-          ##required_sess_store = ActiveRecord::SessionStore
-          ##current_sess_store  = ActionController::Base.session_store
+          active_record_session_store = ActiveRecordSessionStore.new
 
-          # Rails 2.2
-          ## required_sess_store = CGI::Session::ActiveRecordStore
-          ## current_sess_store  = ActionController::Base.session_options[:database_manager]
-
-          # Rails 3.0
-          required_sess_store = ActiveRecord::SessionStore
-          current_sess_store  = ::Rails.application.config.session_store
-
-          if current_sess_store == required_sess_store
+          if active_record_session_store.session_store_is_valid?
             session_id = read_service_session_lookup(si)
 
             if session_id
-              session = current_sess_store::Session.find_by_session_id(session_id)
-              if session
+              if session = active_record_session_store.find_by_session_id(session_id)
                 st = session.data[:cas_last_valid_ticket] || si
                 delete_service_session_lookup(st) if st
                 session.destroy
@@ -420,6 +409,54 @@ module RubyCAS
         st = st.ticket if st.kind_of? CASClient::ServiceTicket
         return "#{Rails.root}/tmp/sessions/cas_sess.#{st}"
       end
+    end
+  end
+
+  class ActiveRecordSessionStore
+    def initialize
+      case Rails::VERSION::MAJOR
+      when 4
+        # Rails 4.0
+        @required_session_store = ActionDispatch::Session::ActiveRecordStore
+        @current_session_store  = ::Rails.application.config.session_store
+      when 3
+        # Rails 3.0
+        @required_session_store = ActiveRecord::SessionStore
+        @current_session_store  = ::Rails.application.config.session_store
+
+      # Untested but should be OK
+      # when 2
+        # if Rails::VERSION::MINOR >= 3
+          # Rails 2.3
+          # @required_session_store = ActiveRecord::SessionStore
+          # @current_session_store  = ActionController::Base.session_store
+        # else
+          # Rails 2.2
+          # @required_session_store = CGI::Session::ActiveRecordStore
+          # @current_session_store  = ActionController::Base.session_options[:database_manager]
+        # end
+      end
+    end
+
+    def session_store_is_valid?
+      @required_session_store == @current_session_store
+    end
+
+    def find_by_session_id(session_id)
+      case Rails::VERSION::MAJOR
+      when 4
+        # Rails 4.0
+        session = @current_session_store.session_class.find_by_session_id(session_id)
+      when 3
+        # Rails 3.0
+        session = @current_session_store::Session.find_by_session_id(session_id)
+        
+      # Untested but should be OK
+      # when 2
+        # Rails 2.0
+        # session = @current_session_store::Session.find_by_session_id(session_id)
+      end
+      session
     end
   end
 
