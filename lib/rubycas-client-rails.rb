@@ -39,7 +39,7 @@ module RubyCAS
         
         ### patch this line to recreate the 2 items from cookie 
         last_st = controller.session[:cas_last_valid_ticket]
-	last_st_service = controller.session[:cas_last_valid_ticket_service]
+        last_st_service = controller.session[:cas_last_valid_ticket_service]
         
         if single_sign_out(controller)
           controller.send(:render, :text => "CAS Single-Sign-Out request intercepted.")
@@ -178,6 +178,13 @@ module RubyCAS
         url = client.add_service_to_login_url(service_url)
         log.debug("Generated login url: #{url}")
         return url
+      end
+
+      # Returns the login ticket
+      def login_ticket
+        @@client.request_login_ticket.tap do |lt|
+          log.debug("Generated login ticket: #{lt}")
+        end        
       end
 
       # allow controllers to reuse the existing config to auto-login to
