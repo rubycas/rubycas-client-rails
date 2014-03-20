@@ -155,6 +155,8 @@ module RubyCAS
         return false
       end
       
+      alias :before :filter
+
       # used to allow faking for testing
       # with cucumber and other tools.
       # use like 
@@ -175,7 +177,17 @@ module RubyCAS
       # action. 
       def login_url(controller)
         service_url = read_service_url(controller)
-        url = client.add_service_to_login_url(service_url)
+
+        #add local login
+        if !!@@config[:local_login]
+          request  = controller.request
+          url = URI.parse(@@config[:local_login_url]||"#{request.protocol.to_s}#{request.host_with_port}/sessions/new").tap { |uri|
+            uri.query = (uri.query ? uri.query + "&" : "") + "service=#{CGI.escape(service_url)}"  
+          }.to_s
+        else
+          url = client.add_service_to_login_url(service_url)
+        end
+
         log.debug("Generated login url: #{url}")
         return url
       end
