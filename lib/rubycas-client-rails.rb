@@ -153,6 +153,9 @@ module RubyCAS
         return false
       end
 
+      #hack to get filter working with Rails 4.1
+      alias_method :before, :filter if Rails::VERSION::MAJOR == 4
+
       # used to allow faking for testing
       # with cucumber and other tools.
       # use like
