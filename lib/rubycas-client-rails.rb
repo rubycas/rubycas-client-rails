@@ -39,7 +39,7 @@ module RubyCAS
         
         ### patch this line to recreate the 2 items from cookie 
         last_st = controller.session[:cas_last_valid_ticket]
-	last_st_service = controller.session[:cas_last_valid_ticket_service]
+        last_st_service = controller.session[:cas_last_valid_ticket_service]
         
         if single_sign_out(controller)
           controller.send(:render, :text => "CAS Single-Sign-Out request intercepted.")
@@ -155,6 +155,8 @@ module RubyCAS
         return false
       end
       
+      alias :before :filter
+
       # used to allow faking for testing
       # with cucumber and other tools.
       # use like 
@@ -175,9 +177,26 @@ module RubyCAS
       # action. 
       def login_url(controller)
         service_url = read_service_url(controller)
-        url = client.add_service_to_login_url(service_url)
+
+        #add local login
+        if !!@@config[:local_login]
+          request  = controller.request
+          url = URI.parse(@@config[:local_login_url]||"#{request.protocol.to_s}#{request.host_with_port}/sessions/new").tap { |uri|
+            uri.query = (uri.query ? uri.query + "&" : "") + "service=#{CGI.escape(service_url)}"  
+          }.to_s
+        else
+          url = client.add_service_to_login_url(service_url)
+        end
+
         log.debug("Generated login url: #{url}")
         return url
+      end
+
+      # Returns the login ticket
+      def login_ticket
+        @@client.request_login_ticket.tap do |lt|
+          log.debug("Generated login ticket: #{lt}")
+        end        
       end
 
       # allow controllers to reuse the existing config to auto-login to
@@ -228,7 +247,7 @@ module RubyCAS
       # <tt>request.referer</tt>.
       def logout(controller, service = nil)
         referer = service || controller.request.referer
-        st = controller.session[:cas_last_valid_ticket]
+        st = controller.session[:cas_last_valCid_ticket]
         delete_service_session_lookup(st) if st
         controller.send(:reset_session)
         controller.send(:redirect_to, client.logout_url(referer))
