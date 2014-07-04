@@ -20,6 +20,11 @@ module RubyCAS
     @@fake_extra_attributes = nil
     
     class << self
+
+      def before(controller)
+        self.filter controller
+      end
+
       def setup(config)
         @@config = config
         @@config[:logger] = Rails.logger unless @@config[:logger]
