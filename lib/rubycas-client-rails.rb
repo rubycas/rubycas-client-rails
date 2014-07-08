@@ -20,6 +20,11 @@ module RubyCAS
     @@fake_extra_attributes = nil
     
     class << self
+
+      def before(controller)
+        self.filter controller
+      end
+
       def setup(config)
         @@config = config
         @@config[:logger] = Rails.logger unless @@config[:logger]
@@ -255,9 +260,10 @@ module RubyCAS
         else
           controller.session[:cas_sent_to_gateway] = false
         end
-        
+
         if controller.session[:previous_redirect_to_cas] &&
-            controller.session[:previous_redirect_to_cas] > (Time.now - 1.second)
+            ((controller.session[:previous_redirect_to_cas].class == Time &&  controller.session[:previous_redirect_to_cas] > (Time.now - 1.second)) ||
+             (controller.session[:previous_redirect_to_cas].class == String &&  Time.parse(controller.session[:previous_redirect_to_cas]) > (Time.now - 1.second)))
           log.warn("Previous redirect to the CAS server was less than a second ago. The client at #{controller.request.remote_ip.inspect} may be stuck in a redirection loop!")
           controller.session[:cas_validation_retry_count] ||= 0
           
