@@ -294,42 +294,6 @@ module RubyCAS
           end
           
           log.debug "Intercepted single-sign-out request for CAS session #{si.inspect}."
-
-          # Rails 2.3
-          ##required_sess_store = ActiveRecord::SessionStore
-          ##current_sess_store  = ActionController::Base.session_store
-
-          # Rails 2.2
-          ## required_sess_store = CGI::Session::ActiveRecordStore
-          ## current_sess_store  = ActionController::Base.session_options[:database_manager]
-
-          # Rails 3.0
-          required_sess_store = ActiveRecord::SessionStore
-          current_sess_store  = ::Rails.application.config.session_store
-
-          if current_sess_store == required_sess_store
-            session_id = read_service_session_lookup(si)
-
-            if session_id
-              session = current_sess_store::Session.find_by_session_id(session_id)
-              if session
-                st = session.data[:cas_last_valid_ticket] || si
-                delete_service_session_lookup(st) if st
-                session.destroy
-                log.debug("Destroyed #{session.inspect} for session #{session_id.inspect} corresponding to service ticket #{si.inspect}.")
-              else
-                log.debug("Data for session #{session_id.inspect} was not found. It may have already been cleared by a local CAS logout request.")
-              end
-              
-              log.info("Single-sign-out for session #{session_id.inspect} completed successfuly.")
-            else
-              log.warn("Couldn't destroy session with SessionIndex #{si} because no corresponding session id could be looked up.")
-            end
-          else
-            log.error "Cannot process logout request because this Rails application's session store is "+
-              " #{current_sess_store.name.inspect}. Single Sign-Out only works with the "+
-              " #{required_sess_store.name.inspect} session store."
-          end
           
           # Return true to indicate that a single-sign-out request was detected
           # and that further processing of the request is unnecessary.
