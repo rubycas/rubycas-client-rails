@@ -27,7 +27,7 @@ module RubyCAS
         @@log = @@client.log
       end
       
-      def filter(controller)
+      def before(controller)
         raise "Cannot use the CASClient filter because it has not yet been configured." if config.nil?
         
         if @@fake_user
