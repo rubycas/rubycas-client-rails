@@ -18,6 +18,10 @@ module RubyCAS
     @@log = nil
     @@fake_user = nil
     @@fake_extra_attributes = nil
+
+    def before(controller)
+      self.filter controller
+    end
     
     class << self
       def setup(config)
