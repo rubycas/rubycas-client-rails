@@ -18,12 +18,13 @@ module RubyCAS
     @@log = nil
     @@fake_user = nil
     @@fake_extra_attributes = nil
-
-    def before(controller)
-      self.filter controller
-    end
     
     class << self
+      
+      def before(controller)
+        self.filter controller
+      end
+      
       def setup(config)
         @@config = config
         @@config[:logger] = Rails.logger unless @@config[:logger]
