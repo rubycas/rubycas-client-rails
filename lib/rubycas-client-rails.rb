@@ -309,15 +309,18 @@ module RubyCAS
           ## required_sess_store = CGI::Session::ActiveRecordStore
           ## current_sess_store  = ActionController::Base.session_options[:database_manager]
 
-          # Rails 3.0
-          required_sess_store = ActiveRecord::SessionStore
-          current_sess_store  = ::Rails.application.config.session_store
+          # Rails 3.0 through 4.2, including activerecord-session_store gem
+          required_sess_store = [ActiveRecord::SessionStore]
+          # activerecord-session_store support
+          required_sess_store << ActionDispatch::Session::ActiveRecordStore if defined? ActionDispatch::Session::ActiveRecordStore
+          current_sess_store = ::Rails.application.config.session_store
+          session_store = current_sess_store == ActiveRecord::SessionStore ? ActiveRecord::SessionStore::Session : current_sess_store.session_class
 
-          if current_sess_store == required_sess_store
+          if required_sess_store.include? current_sess_store
             session_id = read_service_session_lookup(si)
 
             if session_id
-              session = current_sess_store::Session.find_by_session_id(session_id)
+              session = session_store.find_by_session_id(session_id)
               if session
                 st = session.data[:cas_last_valid_ticket] || si
                 delete_service_session_lookup(st) if st
@@ -333,8 +336,8 @@ module RubyCAS
             end
           else
             log.error "Cannot process logout request because this Rails application's session store is "+
-              " #{current_sess_store.name.inspect}. Single Sign-Out only works with the "+
-              " #{required_sess_store.name.inspect} session store."
+              "#{current_sess_store.name.inspect}. Single Sign-Out only works with the "+
+              "#{required_sess_store.to_sentence(two_words_connector: ' or ', last_word_connector: ', or ')} session store."
           end
           
           # Return true to indicate that a single-sign-out request was detected
