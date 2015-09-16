@@ -310,7 +310,9 @@ module RubyCAS
           ## current_sess_store  = ActionController::Base.session_options[:database_manager]
 
           # Rails 3.0 through 4.2, including activerecord-session_store gem
-          required_sess_store = [ActiveRecord::SessionStore, ActionDispatch::Session::ActiveRecordStore]
+          required_sess_store = [ActiveRecord::SessionStore]
+          # activerecord-session_store support
+          required_sess_store << ActionDispatch::Session::ActiveRecordStore if defined? ActionDispatch::Session::ActiveRecordStore
           current_sess_store = ::Rails.application.config.session_store
           session_store = current_sess_store == ActiveRecord::SessionStore ? ActiveRecord::SessionStore::Session : current_sess_store.session_class
 
