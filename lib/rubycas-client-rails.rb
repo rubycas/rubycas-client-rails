@@ -97,7 +97,7 @@ module RubyCAS
           
             # Store the ticket in the session to avoid re-validating the same service
             # ticket with the CAS server.
-            controller.session[:cas_last_valid_ticket] = st
+            controller.session[:cas_last_valid_ticket] = prepare_session_ticket(st)
             
             if vr.pgt_iou
               unless controller.session[:cas_pgt] && controller.session[:cas_pgt].ticket && controller.session[:cas_pgt].iou == vr.pgt_iou
@@ -271,6 +271,11 @@ module RubyCAS
       end
       
       private
+
+      def prepare_session_ticket(session_ticket)
+        session_ticket
+      end
+
       def single_sign_out(controller)
         
         # Avoid calling raw_post (which may consume the post body) if
