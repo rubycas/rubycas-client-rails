@@ -101,7 +101,7 @@ module RubyCAS
 
               if config[:enable_single_sign_out]
                 client.ticket_store.store_service_session_lookup(st, controller)
-                log.debug("Wrote service session lookup file to #{st.inspect} with session id #{controller.request.session_options[:id] || controller.session.session_id.inspect}.")
+                log.debug("Wrote service session lookup file to #{st.ticket.inspect} with session id #{controller.request.session_options[:id] || controller.session.session_id.inspect}.")
               end
             #end
 
