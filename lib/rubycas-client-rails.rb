@@ -11,6 +11,7 @@ module RubyCAS
   end
 
   class Filter
+    TICKET_REGEX = %r{^<samlp:LogoutRequest.*?<samlp:SessionIndex>(.*)</samlp:SessionIndex>}m
     cattr_reader :config, :log, :client
 
     # These are initialized when you call setup.
@@ -282,7 +283,6 @@ module RubyCAS
 
       private
       def single_sign_out(controller)
-
         # Avoid calling raw_post (which may consume the post body) if
         # this seems to be a file upload
         if content_type = controller.request.headers["CONTENT_TYPE"] &&
@@ -290,10 +290,7 @@ module RubyCAS
           return false
         end
 
-        if controller.request.post? &&
-            controller.params['logoutRequest'] &&
-            URI.unescape(controller.params['logoutRequest']) =~
-              %r{^<samlp:LogoutRequest.*?<samlp:SessionIndex>(.*)</samlp:SessionIndex>}m
+        if controller.params['logoutRequest'] && URI.unescape(controller.params['logoutRequest']) =~ TICKET_REGEX
           # TODO: Maybe check that the request came from the registered CAS server? Although this might be
           #       pointless since it's easily spoofable...
           si = $~[1]
