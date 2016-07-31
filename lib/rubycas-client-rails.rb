@@ -247,7 +247,7 @@ module RubyCAS
         end
       end
 
-      def redirect_to_cas_for_authentication(controller)
+      def redirect_to_cas_for_authentication(controller, service=nil)
         redirect_url = login_url(controller)
 
         if use_gatewaying?
@@ -273,8 +273,8 @@ module RubyCAS
         end
         controller.session[:previous_redirect_to_cas] = Time.now
 
-        log.debug("Redirecting to #{redirect_url.inspect}")
-        controller.send(:redirect_to, redirect_url)
+        log.debug("Redirecting to #{client.logout_url(service)}")
+        controller.send(:redirect_to, client.logout_url(service))
       end
 
       private
