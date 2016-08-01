@@ -273,8 +273,8 @@ module RubyCAS
         end
         controller.session[:previous_redirect_to_cas] = Time.now
 
-        log.debug("Redirecting to #{client.logout_url(service)}")
-        controller.send(:redirect_to, client.logout_url(service))
+        log.debug("Redirecting to #{redirect_url}")
+        controller.send(:redirect_to, redirect_url)
       end
 
       private
