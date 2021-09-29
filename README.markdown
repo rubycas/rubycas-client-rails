@@ -20,6 +20,7 @@ Now add both to your `Gemfile`:
 
     gem 'rubycas-client'
     gem 'rubycas-client-rails', :path => '/path/where/you/cloned/rubycas-client-rails'
+    gem 'rubycas-client-rails', github: 'recruiting-tech/rubycas-client-rails', branch: 'ncsa-rails6'
 
 In your `application.rb` add:
 
