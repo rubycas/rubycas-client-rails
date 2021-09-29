@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = %q{rubycas-client-rails}
-  s.version = "0.1.0"
+  s.version = "0.2.0"
 
   s.authors = ["Matt Zukowski"]
   s.date = %q{2011-08-13}

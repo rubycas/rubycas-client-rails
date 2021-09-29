@@ -24,13 +24,20 @@ Now add both to your `Gemfile`:
 In your `application.rb` add:
 
     config.rubycas.cas_base_url = 'https://cas.example.com/'
-  
+    config.rubycas.session_store_klass = RubyCAS::RailsCacheStore
+
+Session Store Klass:
+
+There are two options, `RubyCAS::RailsCacheStore` and `RubyCAS::SessionStore`.  The default is SessionStore, but is not recommended because it causes a CookieOverflow issue.
+
+    config.rubycas.session_store_klass = RubyCAS::RailsCacheStore
+
 Finally, to enable the CAS filter for a controller:
 
     class MyController < ApplicationController
-  
+
       before_filter RubyCAS::Filter
-  
+
 Many other configuration options are available. For example you can instruct
 the client to log its actions to the default Rails logger using:
 
