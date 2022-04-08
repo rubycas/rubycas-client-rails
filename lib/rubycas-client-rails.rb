@@ -10,6 +10,50 @@ module RubyCAS
     end
   end
 
+  class SessionStore
+    def initialize(controller)
+      @controller = controller
+    end
+
+    def last_valid_ticket
+      @controller.session[:cas_last_valid_ticket]
+    end
+
+    def last_valid_ticket=(last_ticket)
+      @controller.session[:cas_last_valid_ticket] = last_ticket
+    end
+
+    def invalidate!
+      st = last_valid_ticket
+      @controller.session.delete(:cas_last_valid_ticket) if st
+    end
+  end
+
+  class RailsCacheStore
+    def initialize(controller)
+      @controller = controller
+      username = @controller.session[:casfilteruser]
+      @cach_key = "cas_#{username}_ticket"
+    end
+
+    def last_valid_ticket
+      Rails.cache.fetch(@cach_key)
+    end
+
+    def last_valid_ticket=(last_ticket)
+      Rails.cache.write(@cach_key, last_ticket, expires_in: 2.weeks)
+    end
+
+    def invalidate!
+      # Clean up any old session data
+      SessionStore.new(@controller).invalidate!
+
+      # Clean up Rails Cache Version
+      st = last_valid_ticket
+      Rails.cache.delete(@cach_key) if st
+    end
+  end
+
   class Filter
     cattr_reader :config, :log, :client
 
@@ -18,6 +62,7 @@ module RubyCAS
     @@log = nil
     @@fake_user = nil
     @@fake_extra_attributes = nil
+    @@session_store_klass = nil
 
     class << self
       def setup(config)
@@ -25,6 +70,7 @@ module RubyCAS
         @@config[:logger] = Rails.logger unless @@config[:logger]
         @@client = CASClient::Client.new(@@config)
         @@log = @@client.log
+        @@session_store_klass = @@config[:session_store_klass] || SessionStore
       end
 
       def before(controller)
@@ -37,8 +83,8 @@ module RubyCAS
           return true
         end
 
-
-        last_st = controller.session[:cas_last_valid_ticket]
+        session_store_klass = @@session_store_klass.new(controller)
+        last_st = session_store_klass.last_valid_ticket
 
         if single_sign_out(controller)
           controller.send(:render, :plain => "CAS Single-Sign-Out request intercepted.")
@@ -92,12 +138,11 @@ module RubyCAS
               # so we need to set this here to ensure compatibility with configurations
               # built around the old client.
               controller.session[:casfilteruser] = vr.user
-
             end
 
-            # Store the ticket in the session to avoid re-validating the same service
+            # Store the ticket to avoid re-validating the same service
             # ticket with the CAS server.
-            controller.session[:cas_last_valid_ticket] = prepare_session_ticket(st)
+            session_store_klass.last_valid_ticket = prepare_session_ticket(st)
 
             if vr.pgt_iou
               unless controller.session[:cas_pgt] && controller.session[:cas_pgt].ticket && controller.session[:cas_pgt].iou == vr.pgt_iou
@@ -222,8 +267,7 @@ module RubyCAS
       # <tt>request.referer</tt>.
       def logout(controller, service = nil)
         referer = service || controller.request.referer
-        st = controller.session[:cas_last_valid_ticket]
-        delete_service_session_lookup(st) if st
+        @@session_store_klass.new(controller).invalidate!
         controller.send(:reset_session)
         controller.send(:redirect_to, client.logout_url(referer))
       end
