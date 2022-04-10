@@ -102,8 +102,8 @@ module RubyCAS
           # The only situation where this is acceptable is if the user manually does a refresh and
           # the same ticket happens to be in the URL.
           log.warn("Re-using previously validated ticket since the ticket id and service are the same.")
-          st = last_st
-          is_new_session = false
+          #st = last_st
+          return true
         elsif last_st &&
             !config[:authenticate_on_every_request] &&
             controller.session[client.username_session_key]
@@ -115,9 +115,9 @@ module RubyCAS
           # the :authenticate_on_every_request config option to true. However, this is not desirable since
           # it will almost certainly break POST request, AJAX calls, etc.
           log.debug "Existing local CAS session detected for #{controller.session[client.username_session_key].inspect}. "+
-            "Previous ticket #{last_st.ticket.inspect} will be re-used."
-          st = last_st
-          is_new_session = false
+            "Previous ticket #{last_st_service} will be re-used."
+          #st = last_st
+          return true
         end
 
         if st
@@ -147,7 +147,7 @@ module RubyCAS
             if vr.pgt_iou
               unless controller.session[:cas_pgt] && controller.session[:cas_pgt].ticket && controller.session[:cas_pgt].iou == vr.pgt_iou
                 log.info("Receipt has a proxy-granting ticket IOU. Attempting to retrieve the proxy-granting ticket...")
-                pgt = client.retrieve_proxy_granting_ticket(vr.pgt_iou)
+                pgt = client.retrieve_proxy_granting_ticket(st.pgt_iou)
 
                 if pgt
                   log.debug("Got PGT #{pgt.ticket.inspect} for PGT IOU #{pgt.iou.inspect}. This will be stored in the session.")
@@ -155,18 +155,18 @@ module RubyCAS
                   # For backwards compatibility with RubyCAS-Client 1.x configurations...
                   controller.session[:casfilterpgt] = pgt
                 else
-                  log.error("Failed to retrieve a PGT for PGT IOU #{vr.pgt_iou}!")
+                  log.error("Failed to retrieve a PGT for PGT IOU #{st.pgt_iou}!")
                 end
               else
-                log.info("PGT is present in session and PGT IOU #{vr.pgt_iou} matches the saved PGT IOU.  Not retrieving new PGT.")
+                log.info("PGT is present in session and PGT IOU #{st.pgt_iou} matches the saved PGT IOU.  Not retrieving new PGT.")
               end
 
             end
 
             return true
           else
-            log.warn("Ticket #{st.ticket.inspect} failed validation -- #{vr.failure_code}: #{vr.failure_message}")
-            unauthorized!(controller, vr)
+            log.warn("Ticket #{st.ticket.inspect} failed validation -- #{st.failure_code}: #{st.failure_message}")
+            unauthorized!(controller, st)
             return false
           end
         else # no service ticket was present in the request
@@ -188,8 +188,8 @@ module RubyCAS
           unauthorized!(controller)
           return false
         end
-      rescue OpenSSL::SSL::SSLError
-        log.error("SSL Error: hostname was not match with the server certificate. You can try to disable the ssl verification with a :force_ssl_verification => false in your configurations file.")
+      rescue OpenSSL::SSL::SSLError => sslexception
+        log.error("SSL Error: #{sslexception}")
         unauthorized!(controller)
         return false
       end
@@ -331,7 +331,7 @@ module RubyCAS
 
         if controller.request.post? &&
             controller.params['logoutRequest'] &&
-            controller.params['logoutRequest'] =~
+            URI.unescape(controller.params['logoutRequest']) =~
               %r{^<samlp:LogoutRequest.*?<samlp:SessionIndex>(.*)</samlp:SessionIndex>}m
           # TODO: Maybe check that the request came from the registered CAS server? Although this might be
           #       pointless since it's easily spoofable...
@@ -341,7 +341,6 @@ module RubyCAS
             log.warn "Ignoring single-sign-out request for CAS session #{si.inspect} because ssout functionality is not enabled (see the :enable_single_sign_out config option)."
             return false
           end
-
           log.debug "Intercepted single-sign-out request for CAS session #{si.inspect}."
 
           # Return true to indicate that a single-sign-out request was detected
