@@ -17,14 +17,27 @@ Then run bundler in your Rails app's root directory:
 
     bundle install
 
+Now add both to your `Gemfile`:
+
+    gem 'rubycas-client'
+    gem 'rubycas-client-rails', :path => '/path/where/you/cloned/rubycas-client-rails'
+    gem 'rubycas-client-rails', github: 'recruiting-tech/rubycas-client-rails', branch: 'ncsa-rails6'
+
 Once the necessary gems have been installed, in your `application.rb` add:
 
     config.rubycas.cas_base_url = 'https://cas.example.com/'
-  
+    config.rubycas.session_store_klass = RubyCAS::RailsCacheStore
+
+Session Store Klass:
+
+There are two options, `RubyCAS::RailsCacheStore` and `RubyCAS::SessionStore`.  The default is SessionStore, but is not recommended because it causes a CookieOverflow issue.
+
+    config.rubycas.session_store_klass = RubyCAS::RailsCacheStore
+
 Finally, to enable the CAS filter for a controller:
 
     class MyController < ApplicationController
-  
+
       before_filter RubyCAS::Filter
       
 If you want authentication to be optional, use the GatewayFilter instead:
