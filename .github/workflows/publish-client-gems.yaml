@@ -1,0 +1,32 @@
+name: Publish Gem
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag or branch"
+        required: true
+        default: "master"
+
+
+jobs:
+  publish-gem:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.ref }}
+      - name: Get Ruby
+        uses: ruby/setup-ruby@v1
+      - name: Build And Push Gem
+        run: |
+          mkdir -p $HOME/.gem
+          touch $HOME/.gem/credentials
+          chmod 0600 $HOME/.gem/credentials
+          printf -- "---\n:github: Bearer ${ARTIFACTORY_TOKEN}\n" > $HOME/.gem/credentials
+          cat $HOME/.gem/credentials
+          gem build *.gemspec
+          gem push -k github --host https://ptc.jfrog.io/artifactory/api/gems/ncsa-local *.gem
+        env:
+          ARTIFACTORY_TOKEN: ${{ secrets.PTC_JFROG_TOKEN }}

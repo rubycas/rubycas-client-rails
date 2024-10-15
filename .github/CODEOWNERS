@@ -1,0 +1,9 @@
+# Use this file to define individuals or teams that are responsible for code in
+# a repository.
+# Read more: <https://help.github.com/articles/about-codeowners/>
+
+# Rules are not cumulative, it is last match wins, so
+# all global code owners must be on the same line.
+#
+
+* @recruiting-tech/ncsa-legacy
